@@ -1,0 +1,203 @@
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Number of params: 240800 (retreival took 0.066100 secs)
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 240800
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 481600
+Created model with fresh parameters.
+Num params: 1082801
+Created model with fresh parameters.
+Num params: 1082801
+Created model with fresh parameters.
+Num params: 1082801
+Created model with fresh parameters.
+Num params: 1082801
+Created model with fresh parameters.
+Num params: 1082801
+Created model with fresh parameters.
+Num params: 1082801
+Created model with fresh parameters.
+Num params: 1082801
+Created model with fresh parameters.
+Num params: 10441
+Created model with fresh parameters.
+Num params: 10441
+Created model with fresh parameters.
+Num params: 10441
+Created model with fresh parameters.
+Num params: 10441
+Created model with fresh parameters.
+Num params: 10441
+Created model with fresh parameters.
+Num params: 10441
+Created model with fresh parameters.
+Num params: 10441
