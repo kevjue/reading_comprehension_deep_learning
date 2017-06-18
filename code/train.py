@@ -78,13 +78,12 @@ def get_normalized_train_dir(train_dir):
 
 def load_dataset(data_dir):
     train_ids_question_data_path = pjoin(FLAGS.data_dir, 'train.ids.question')
-    train_ids_context_data_path = pjoin(FLAGS.data_dir, 'train.ids.context')
+    train_ids_context_data_path = pjoin(FLAGS.data_dir, 'train.ids.context')    
 
     dataset = {}
     if tf.gfile.Exists(train_ids_question_data_path):
         train_question_ids = []
         train_question_lengths = []
-        train_question_masks = []
         
         with tf.gfile.GFile(train_ids_question_data_path, mode="rb") as f:
             for line in f:
@@ -94,16 +93,13 @@ def load_dataset(data_dir):
                 train_question_ids.append((line_ids + [0] * padding_length)[0:FLAGS.max_question_length])
                 question_seq_length = min(line_length, FLAGS.max_question_length)
                 train_question_lengths.append(question_seq_length)
-                train_question_masks.append([1] * question_seq_length + [0] * (FLAGS.max_question_length - question_seq_length))
 
             dataset['train_question_ids'] = train_question_ids
             dataset['train_question_lengths'] = train_question_lengths
-            dataset['train_question_masks'] = train_question_masks
 
     if tf.gfile.Exists(train_ids_context_data_path):
         train_context_ids = []
         train_context_lengths = []
-        train_context_masks = []
         
         with tf.gfile.GFile(train_ids_context_data_path, mode="rb") as f:
             for line in f:
@@ -113,11 +109,9 @@ def load_dataset(data_dir):
                 train_context_ids.append((c_line_ids + [0] * c_padding_length)[0:FLAGS.max_context_length])
                 context_seq_length = min(c_line_length, FLAGS.max_context_length)
                 train_context_lengths.append(context_seq_length)
-                train_context_masks.append([1] * context_seq_length + [0] * (FLAGS.max_context_length - context_seq_length))
             
             dataset['train_context_ids'] = train_context_ids
             dataset['train_context_lengths'] = train_context_lengths
-            dataset['train_context_masks'] = train_context_masks
             
     return dataset
 
@@ -138,7 +132,9 @@ def main(_):
                       pretrained_embeddings = pretrained_embeddings,
                       max_question_length = FLAGS.max_question_length,
                       max_context_length = FLAGS.max_context_length)
-    decoder = Decoder(output_size=FLAGS.output_size)
+    decoder = Decoder(output_size=FLAGS.output_size,
+                      size = FLAGS.state_size,
+                      max_context_length = FLAGS.max_context_length)
 
     qa = QASystem(encoder, decoder)
 

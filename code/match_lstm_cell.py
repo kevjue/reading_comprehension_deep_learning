@@ -68,7 +68,7 @@ class MatchLSTMCell(tf.contrib.rnn.RNNCell):
             b_a = tf.get_variable(name = 'b_a', shape = [1,], dtype = tf.float64, initializer = zeros_initializer)
             a_t_ = tf.matmul(G_t, w_a) + b_a                                                                                                   # Dimensions = [Batch Size * Q x 1]
             a_t_ = tf.reshape(a_t_, [-1, self.max_question_length])                                                                            # Dimensions = [Batch Size x Q]
-            a_t_ = tf.multiple(a_t_, self.question_mask)
+            a_t_ = tf.add(a_t_, self.question_mask)
             a_t = tf.nn.softmax(a_t_)                                                                                                          # Dimensions = [Batch Size x Q]
 
             weighted_questions = tf.reduce_sum(tf.reshape(tf.multiply(Q_, tf.reshape(a_t, [-1, 1])), [-1, self.max_question_length, self.num_units]), 1)   # Dimensions = [Batch Size X L]

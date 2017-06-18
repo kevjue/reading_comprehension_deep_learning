@@ -7,7 +7,9 @@ import tensorflow as tf
 from tensorflow.python.ops import variable_scope as vs
 
 from evaluate import exact_match_score, f1_score
+import utils
 import match_lstm_cell
+import answer_pointer_cell
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,72 +34,72 @@ class Encoder(object):
         # This flag is used mostly for testing
         self.initialize_with_one = initialize_with_one
 
-        self._build_encoder_graph()
+        self.encodings = None
+        self.context_lengths_placeholder = None
+        self.encoder_graph = self._build_encoder_graph()
 
 
     def _build_encoder_graph(self):
-        self.question_ids_placeholder = tf.placeholder(tf.int32, shape = (None, self.question_max_length), name = 'question_ids_placeholder')
-        self.question_lengths_placeholder = tf.placeholder(tf.int32, shape = (None,), name = 'question_lengths_placeholder')
-        self.question_masks_placeholder = tf.placeholder(tf.float64, shape = (None, self.question_max_length), name = 'question_masks_placeholder')
-        question_embeddings = tf.nn.embedding_lookup(self.pretrained_embeddings, self.question_ids_placeholder)
+        with tf.Graph().as_default() as encoder_graph:
+            self.question_ids_placeholder = tf.placeholder(tf.int32, shape = (None, self.question_max_length), name = 'question_ids_placeholder')
+            self.question_lengths_placeholder = tf.placeholder(tf.int32, shape = (None,), name = 'question_lengths_placeholder')
+            question_embeddings = tf.nn.embedding_lookup(self.pretrained_embeddings, self.question_ids_placeholder)
 
-        if self.initialize_with_one:
-            initializer = tf.ones_initializer()
-        else:
-            initializer = tf.orthogonal_initializer()
+            if self.initialize_with_one:
+                initializer = tf.ones_initializer()
+            else:
+                initializer = tf.orthogonal_initializer()
 
-        # Create LSTM sequence for the question
-        question_lstm_cell = tf.contrib.rnn.LSTMCell(num_units = self.size,
-                                                     initializer = initializer)
+            # Create LSTM sequence for the question
+            question_lstm_cell = tf.contrib.rnn.LSTMCell(num_units = self.size,
+                                                         initializer = initializer)
 
-        question_word_encodings, _ = tf.nn.dynamic_rnn(cell = question_lstm_cell,
-                                                       dtype = tf.float64,
-                                                       sequence_length = self.question_lengths_placeholder,
-                                                       inputs = question_embeddings,
-                                                       scope = 'question_rnn')
+            question_word_encodings, _ = tf.nn.dynamic_rnn(cell = question_lstm_cell,
+                                                           dtype = tf.float64,
+                                                           sequence_length = self.question_lengths_placeholder,
+                                                           inputs = question_embeddings,
+                                                           scope = 'question_rnn')
 
-        # Create LSTM sequence for the context paragraph
-        self.context_ids_placeholder = tf.placeholder(tf.int32, shape = (None, self.context_max_length), name = 'context_ids_placeholder')
-        self.context_lengths_placeholder = tf.placeholder(tf.int32, shape = (None,), name = 'context_lengths_placeholder')
-        context_embeddings =  tf.nn.embedding_lookup(self.pretrained_embeddings, self.context_ids_placeholder)
+            # Create LSTM sequence for the context paragraph
+            self.context_ids_placeholder = tf.placeholder(tf.int32, shape = (None, self.context_max_length), name = 'context_ids_placeholder')
+            self.context_lengths_placeholder = tf.placeholder(tf.int32, shape = (None,), name = 'context_lengths_placeholder')
+            context_embeddings =  tf.nn.embedding_lookup(self.pretrained_embeddings, self.context_ids_placeholder)
 
-        # Create LSTM sequence for the question
-        context_lstm_cell = tf.contrib.rnn.LSTMCell(num_units = self.size,
-                                                    initializer = initializer)
+            # Create LSTM sequence for the question
+            context_lstm_cell = tf.contrib.rnn.LSTMCell(num_units = self.size,
+                                                        initializer = initializer)
 
-        context_word_encodings, _ = tf.nn.dynamic_rnn(cell = context_lstm_cell,
-                                                      dtype = tf.float64,
-                                                      sequence_length = self.context_lengths_placeholder,
-                                                      inputs = context_embeddings,
-                                                      scope = 'context_rnn')
+            context_word_encodings, _ = tf.nn.dynamic_rnn(cell = context_lstm_cell,
+                                                          dtype = tf.float64,
+                                                          sequence_length = self.context_lengths_placeholder,
+                                                          inputs = context_embeddings,
+                                                          scope = 'context_rnn')
 
-        # Create Match LSTM sequence for the context (combination of the context token and attention weighted question for that token)
-        mlstm_cell_fw = match_lstm_cell.MatchLSTMCell(state_size = self.size,
-                                                      question_vector = question_word_encodings,
-                                                      question_mask = self.question_masks_placeholder,
-                                                      max_question_length = self.question_max_length,
-                                                      initializer = initializer)
+            # Create Match LSTM sequence for the context (combination of the context token and attention weighted question for that token)
+            mlstm_cell_fw = match_lstm_cell.MatchLSTMCell(state_size = self.size,
+                                                          question_vector = question_word_encodings,
+                                                          question_mask = utils.create_softmax_mask(self.question_lengths_placeholder, self.question_max_length),
+                                                          max_question_length = self.question_max_length,
+                                                          initializer = initializer)
 
-        mlstm_cell_bw = match_lstm_cell.MatchLSTMCell(state_size = self.size,
-                                                      question_vector = question_word_encodings,
-                                                      question_mask = self.question_masks_placeholder,
-                                                      max_question_length = self.question_max_length,
-                                                      initializer = initializer)
+            mlstm_cell_bw = match_lstm_cell.MatchLSTMCell(state_size = self.size,
+                                                          question_vector = question_word_encodings,
+                                                          question_mask = utils.create_softmax_mask(self.question_lengths_placeholder, self.question_max_length),
+                                                          max_question_length = self.question_max_length,
+                                                          initializer = initializer)
 
-        match_lstm_encodings, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw = mlstm_cell_fw,
-                                                                  cell_bw = mlstm_cell_bw,
-                                                                  dtype = tf.float64, 
-                                                                  sequence_length = self.context_lengths_placeholder,
-                                                                  inputs = context_word_encodings,
-                                                                  scope = 'match_lstm_birnn')
+            match_lstm_encodings, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw = mlstm_cell_fw,
+                                                                      cell_bw = mlstm_cell_bw,
+                                                                      dtype = tf.float64, 
+                                                                      sequence_length = self.context_lengths_placeholder,
+                                                                      inputs = context_word_encodings,
+                                                                      scope = 'match_lstm_birnn')
 
-        self.encoder_graph = tf.concat([match_lstm_encodings[0], match_lstm_encodings[1]], 2)
-        return
-        
-        
-        
+            self.encodings = tf.concat(values = [match_lstm_encodings[0], match_lstm_encodings[1]], axis = 2, name = 'encodings')
+        return encoder_graph
 
-    def encode(self, session, dataset, encoder_state_input):
+    
+    def encode(self, dataset, encoder_state_input):
         """
         In a generalized encode function, you pass in your inputs,
         masks, and an initial
@@ -112,56 +114,63 @@ class Encoder(object):
                  It can be context-level representation, word-level representation,
                  or both.
         """
-
+        
         feed_dict = {self.question_ids_placeholder: dataset['train_question_ids'],
                      self.question_lengths_placeholder: dataset['train_question_lengths'],
-                     self.question_masks_placeholder: dataset['train_question_masks'],
                      self.context_ids_placeholder: dataset['train_context_ids'],
                      self.context_lengths_placeholder: dataset['train_context_lengths']}
 
-        outputs = session.run(self.encoder_graph, feed_dict=feed_dict)
+        with tf.Session(graph = self.encoder_graph) as sess:
+            sess.run(tf.global_variables_initializer())
+            outputs = sess.run(self.encodings, feed_dict=feed_dict)
         
         return outputs
 
-
+    
 
 class Decoder(object):
-    def __init__(self, output_size, size, max_context_length):
-        self.output_size = output_size
+    def __init__(self, output_size, size, max_context_length, max_answer_length):
         self.size = size
         self.max_num_context_tokens = max_context_length + 1
+        self.max_context_length = max_context_length
+        self.max_answer_length = max_answer_length
 
-        self._build_decoder_graph()
+        self.decoder_graph = self._build_decoder_graph()
 
 
     def _build_decoder_graph(self):
-        self.encodings_placeholder = tf.placeholder(tf.float64, shape = (None, self.question_max_length, 2 * self.size), name = 'encodings_placeholder')
-        self.encodings_length_placeholder = tf.placeholder(tf.int32, shape = (None,), name = 'encodings_length_placeholder')
+        with tf.Graph().as_default() as decoder_graph:
+            self.encodings_placeholder = tf.placeholder(tf.float64, shape = (None, self.max_context_length, 2 * self.size), name = 'encodings_placeholder')
+            self.encodings_lengths_placeholder = tf.placeholder(tf.int32, shape = (None,), name = 'encodings_length_placeholder')
 
-        # Add the zero vector to the encodings (for the end of answer token)
-        batch_size = tf.shape(self.encodings_placeholder)[0]
-        zero_vector = tf.fill(shape = (batch_size, 1, 2 * self.size), value = 0.0)
-        encodings = tf.concat([self.encodings_placeholder, zero_vector], 0)
-        encodings_length = self.encodings_length_placeholder + 1
+            # Add the zero vector to the encodings (for the end of answer token)
+            batch_size = tf.shape(self.encodings_placeholder)[0]
+            zero_vector = tf.fill(dims = (batch_size, 1, 2 * self.size), value = np.float64(0.0))
+            encodings = tf.concat([self.encodings_placeholder, zero_vector], 1)
+            encodings_length = self.encodings_lengths_placeholder + 1
 
-        # Create encodings mask
+            ap_cell = answer_pointer_cell.AnswerPointerCell(state_size = self.size,
+                                                            encodings = encodings,
+                                                            encodings_mask = utils.create_softmax_mask(encodings_length, self.max_num_context_tokens),
+                                                            max_num_context_tokens = self.max_num_context_tokens)
 
-        ap_cell = answer_pointer_cell.AnswerPointerCell(state_size = self.size,
-                                                        encodings = self.encodings,
-                                                        encodings_mask = create_softmax_mask(encodings_length, self.max_num_context_tokens),
-                                                        max_num_context_tokens = self.max_num_context_tokens)
+            # dynamic_rnn function requires an input tensor.  The anwer pointer layer doesn't require any inputs (other than the encoded
+            # context and question),  so we need to generate a fake input tensor.
+            fake_inputs = tf.fill(dims = (batch_size, self.max_answer_length, 1), value = 0)
+            answer_softmaxes, _ = tf.nn.dynamic_rnn(cell = ap_cell,
+                                                    dtype = tf.float64,
+                                                    inputs = fake_inputs,
+                                                    scope = 'ap_rnn')
 
-        fake_inputs = tf.fill(shape = (batch_size, self.max_answer_length), value = 0)
-        answer_softmaxes, _ = tf.nn.dynamic_rnn(cell = question_lstm_cell,
-                                                dtype = tf.float64,
-                                                inputs = fake_inputs,
-                                                scope = 'ap_rnn')
-        
+            # Need to create a graph label for the answer_softmax computation node.  The tf.nn.dynamic_rnn function doesn't allow
+            # for setting that label, so I'm using the tf.identify function
+            self.answer_softmaxes = tf.identity(answer_softmaxes, 'answer_softmaxes')
 
-        
-        
+        return decoder_graph
 
-    def decode(self, knowledge_rep):
+
+
+    def decode(self, knowledge_rep, knowledge_rep_lengths):
         """
         takes in a knowledge representation
         and output a probability estimation over
@@ -174,8 +183,17 @@ class Decoder(object):
         :return:
         """
 
-        return
+        feed_dict = {self.encodings_placeholder: knowledge_rep,
+                     self.encodings_lengths_placeholder: knowledge_rep_lengths}
 
+        with tf.Session(graph = self.decoder_graph) as sess:
+            sess.run(tf.global_variables_initializer())
+            outputs = sess.run(self.answer_softmaxes, feed_dict=feed_dict)
+        
+        return outputs
+
+    
+    
 class QASystem(object):
     def __init__(self, encoder, decoder, *args):
         """
@@ -185,13 +203,13 @@ class QASystem(object):
         :param decoder: a decoder that you constructed in train.py
         :param args: pass in more arguments as needed
         """
-
         self.encoder = encoder
-        # ==== set up placeholder tokens ========
+        self.decoder = decoder
+        self.graph = tf.Graph()
 
         # ==== assemble pieces ====
         with tf.variable_scope("qa", initializer=tf.uniform_unit_scaling_initializer(1.0)):
-            self.setup_embeddings()
+            #self.setup_embeddings()
             self.setup_system()
             self.setup_loss()
 
@@ -205,16 +223,33 @@ class QASystem(object):
         you should call various functions inside encoder, decoder here
         to assemble your reading comprehension system!
         :return:
-        """        
-        
+        """
+        with self.graph.as_default():
+            self.question_ids_placeholder = tf.placeholder(tf.int32, shape = (None, self.question_max_length), name = 'question_ids_placeholder')
+            self.question_lengths_placeholder = tf.placeholder(tf.int32, shape = (None,), name = 'question_lengths_placeholder')
+            self.context_ids_placeholder = tf.placeholder(tf.int32, shape = (None, self.context_max_length), name = 'context_ids_placeholder')
+            self.context_lengths_placeholder = tf.placeholder(tf.int32, shape = (None,), name = 'context_lengths_placeholder')
+            
+            encodings, = tf.import_graph_def(self.encoder.encoder_graph.as_graph_def(),
+                                             input_map = {'question_ids_placeholder:0': self.question_ids_placeholder,
+                                                          'question_lengths_placeholder:0': self.question_lengths_placeholder,
+                                                          'context_ids_placeholder:0': self.context_ids_placeholder,
+                                                          'context_lengths_placeholder:0': self.context_lengths_placeholder},
+                                             return_elements = ['encodings:0'])
 
+            self.answer_softmaxes, = tf.import_graph_def(self.decoder.decoder_graph.as_graph_def(),
+                                                         input_map = {'encodings_placeholder:0', encodings,
+                                                                      'encodings_length_placeholder:0', self.context_lenghts_placeholder},
+                                                         return_elements = ['answer_softmaxes'])
+        
+        
     def setup_loss(self):
         """
         Set up your loss computation here
         :return:
         """
-        with vs.variable_scope("loss"):
-            pass
+        with self.graph.as_default():
+            
 
     def setup_embeddings(self):
         """
@@ -387,9 +422,7 @@ class QASystem(object):
 
 
 
-def run_encoder_tests():
-    #def __init__(self, size, vocab_dim, pretrained_embeddings, max_question_length, max_context_length):
-
+def run_encoder_tests(max_context_length, size):
     test_pretrained_embeddings = np.array([[0.418, 0.24968, -0.41242, 0.1217, 0.34527, -0.044457, -0.49688, -0.17862, -0.00066023, -0.6566],
                                            [0.013441, 0.23682, -0.16899, 0.40951, 0.63812, 0.47709, -0.42852, -0.55641, -0.364, -0.23938],
                                            [0.15164, 0.30177, -0.16763, 0.17684, 0.31719, 0.33973, -0.43478, -0.31086, -0.44999, -0.29486],
@@ -397,7 +430,10 @@ def run_encoder_tests():
                                            [0.68047, -0.039263, 0.30186, -0.17792, 0.42962, 0.032246, -0.41376, 0.13228, -0.29847, -0.085253]],
                                           dtype = np.float64)
         
-    test_encoder = Encoder(10, 10, test_pretrained_embeddings, 5, 10)
+    test_encoder = Encoder(size = size,
+                           pretrained_embeddings = test_pretrained_embeddings,
+                           max_context_length = max_context_length,
+                           max_question_length = 5)
 
     question1_ids = [3, 2, 1, 1, 3]
     question2_ids = [3, 1, 3, 0, 0]
@@ -417,14 +453,26 @@ def run_encoder_tests():
                      'train_context_ids': [context1_ids, context2_ids],
                      'train_context_lengths': context_lengths}
 
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        encodings = test_encoder.encode(sess,
-                                        training_data,
-                                        None)
-    return encodings
+    encodings = test_encoder.encode(training_data,
+                                    None)
+    return encodings, context_lengths
 
+
+def run_decoder_tests(encodings, encodings_lengths, max_context_length, size):
+    test_decoder = Decoder(output_size = None,
+                           size = size,
+                           max_context_length = max_context_length,
+                           max_answer_length = 5)
+
+    answer_softmaxes = test_decoder.decode(encodings, encodings_lengths)
+    return answer_softmaxes
+    
+    
 
 if __name__ == '__main__':
-    encodings = run_encoder_tests()
+    max_context_length = 10
+    size = 10
+    encodings, encodings_lengths = run_encoder_tests(max_context_length, size)
     print(encodings)
+    answer_softmaxes = run_decoder_tests(encodings, encodings_lengths, max_context_length, size)
+    print(answer_softmaxes)
